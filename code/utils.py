@@ -10,7 +10,6 @@ from skimage.feature import hog
 import matplotlib.pyplot as plt
 import os
 from scipy.ndimage.measurements import label
-import subprocess as sp
 
 import constants as c
 
@@ -373,6 +372,7 @@ def get_sliding_window_preds(imgs, model, scaler, y_start=400, y_stop=656, cell_
 
     :param imgs: The images for which to get predictions.
     :param model: The model to make predictions.
+    :param scaler: The scaler used to normalize the data when training.
     :param y_start: The pixel value on the y axis at which to start searching for cars (Top of
                     search window).
     :param y_stop: The pixel value on the y axis at which to stop searching for cars (Bottom of
@@ -482,7 +482,7 @@ def threshold_heatmaps(heatmaps, threshold=7):
     return heatmaps
 
 
-def rolling_threshold(heatmaps, threshold=4, hist_len=6):
+def rolling_threshold(heatmaps, threshold=4, hist_len=8):
     """
     Clean up the heatmaps by removing any values below the threshold over an average of the
     past hist_len frames.
@@ -493,8 +493,10 @@ def rolling_threshold(heatmaps, threshold=4, hist_len=6):
 
     :return: The thresholded heatmaps.
     """
-    class RingBuffer():
-        "A 1D ring buffer using numpy arrays"
+    class RingBuffer:
+        """
+        A 1D ring buffer using numpy arrays.
+        """
 
         def __init__(self, shape):
             self.shape = shape
@@ -502,7 +504,11 @@ def rolling_threshold(heatmaps, threshold=4, hist_len=6):
             self.index = 0
 
         def extend(self, x):
-            "adds array x to ring buffer"
+            """
+            Adds array x to ring buffer.
+
+            :param x: The element to add to the RingBuffer
+            """
             self.data[self.index] = x
             self.index = (self.index + 1) % self.shape[0]
 
@@ -556,8 +562,8 @@ def draw_boxes(imgs, segmentation_maps, num_cars):
     :return: The images, superimposed with bounding boxes.
     """
     imgs_superimposed = imgs.copy()
+    overlays = imgs.copy()
     for i, img in enumerate(imgs):
-        overlay = img.copy()
         for car_num in xrange(1, num_cars[i] + 1):
             # Find pixels with each car_number label value
             nonzero = np.where(segmentation_maps[i] == car_num)
@@ -572,11 +578,13 @@ def draw_boxes(imgs, segmentation_maps, num_cars):
             # Draw the box on the image
             color = (228, 179, 0)
             cv2.rectangle(imgs_superimposed[i], box[0], box[1], color, 2)
-            cv2.rectangle(overlay, box[0], box[1], color, -1)
+            cv2.rectangle(overlays[i], box[0], box[1], color, -1)
 
-        cv2.addWeighted(imgs_superimposed[i], 0.8, overlay, 0.2, 0)
+        # cv2.addWeighted(imgs_superimposed[i], 0.8, overlays[i], 0.2, 0)
+        imgs_superimposed[i] = cv2.addWeighted(overlays[i], 0.5, imgs_superimposed[i], 0.5, 0)
 
     return imgs_superimposed
+
 
 def get_train_test_data(train_frac=0.66):
     """
@@ -587,8 +595,8 @@ def get_train_test_data(train_frac=0.66):
 
     :return: A tuple of tuples, ((images train, labels train), (images test, labels test)).
     """
-    car_paths = glob(join(c.DATA_DIR, 'vehicles', '*', '*.png'))
-    non_car_paths = glob(join(c.DATA_DIR, 'non-vehicles', '*', '*.png'))
+    # car_paths = glob(join(c.DATA_DIR, 'vehicles', '*', '*.png'))
+    # non_car_paths = glob(join(c.DATA_DIR, 'non-vehicles', '*', '*.png'))
 
     # paths = np.concatenate([car_paths, non_car_paths])
     # print 'Read Input'
@@ -622,7 +630,7 @@ def get_train_test_data(train_frac=0.66):
     # labels_test = np.concatenate([np.ones([len(car_test)]), np.zeros(len(non_test))])
     # inputs_test, labels_test = zip(*np.random.permutation(zip(inputs_test, labels_test)))
 
-
+    # Split on the directories to eliminate train/test bleed
     car_paths_train = glob(join(c.DATA_DIR, 'vehicles', 'GTI*', '*.png'))
     car_paths_test = glob(join(c.DATA_DIR, 'vehicles', 'KITTI*', '*.png'))
     non_paths_train = glob(join(c.DATA_DIR, 'non-vehicles', 'GTI*', '*.png'))
@@ -733,27 +741,13 @@ def display_images(imgs):
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-
-# def heatmaps2img(heatmaps):
-#     """
-#     Scales heatmaps so 0 is 0% opacity and the 10 is 100% opacity.
-#
-#     :param heatmaps: The heatmaps to visualize
-#     """
-#     scaled_heatmaps = np.zeros(heatmaps.shape + (4,))
-#     scaled_heatmaps[:, :, :, 1] = 1  # Make it green
-#
-#     scaled_heatmaps[:, :, :, 3] = 0
-#
-#     return np.float32(scaled_heatmaps)
-
 def heatmaps2img(heatmaps):
     """
     Scales heatmaps so 0 is 0% opacity and the 10 is 100% opacity.
 
     :param heatmaps: The heatmaps to visualize
     """
-    scaled_heatmaps = 255 * heatmaps / 16.
+    scaled_heatmaps = 255 * heatmaps / np.amax(heatmaps)
     scaled_heatmaps = np.reshape(scaled_heatmaps, scaled_heatmaps.shape + (1,))
     scaled_heatmaps = np.concatenate([np.ones_like(scaled_heatmaps),
                                       np.zeros_like(scaled_heatmaps),
