@@ -74,14 +74,11 @@ if __name__ == "__main__":
             test()
             sys.exit(2)
 
-    # if path is None:
-    #     print_usage()
-    #     sys.exit(2)
+    if paths is None:
+        print_usage()
+        sys.exit(2)
 
-    # run(paths)
+    # Will only work for videos rn
     imgs_processed = run(paths)
-    #
-    # Save images. Use same filename as input, but in save directory.
-    for i, path in enumerate(paths):
-        save_path = utils.get_path(join(c.SAVE_DIR, basename(path)))
-        utils.save_output([imgs_processed[i]], save_path)
+    save_path = utils.get_path(join(c.SAVE_DIR, basename(paths[0])))
+    utils.save_output(imgs_processed, save_path)

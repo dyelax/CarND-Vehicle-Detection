@@ -54,6 +54,12 @@ I tried various combinations of parameters and...
 
 I trained a linear SVM using...
 
+Test Accuracy (splitting on dirs)
+HLS-9: 0.89686423781
+HLS-12: 0.902936378467
+YCrCb-12: 0.932390792097 (But not making any detections)
+HSV-12: 0.910277324633
+
 ###Sliding Window Search
 
 ####1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?

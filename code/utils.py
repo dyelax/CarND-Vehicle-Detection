@@ -105,9 +105,8 @@ def save_output(imgs, path):
         cv2.imwrite(path, imgs[0])
     else:
         # Output is a video.
-        vid_frames = np.array([cv2.cvtColor(img, cv2.COLOR_BGR2RGB) for img in imgs]) * 255
-        vid_frames.astype(np.uint8)
-        skvideo.io.vwrite(path + '.avi', vid_frames)
+        vid_frames = [cv2.cvtColor(img, cv2.COLOR_BGR2RGB) for img in imgs]
+        skvideo.io.vwrite(path, vid_frames)
 
 
 def save_model(model, scaler, path=c.MODEL_SAVE_PATH):
