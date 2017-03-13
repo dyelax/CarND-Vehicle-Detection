@@ -6,20 +6,34 @@ import utils
 import constants as c
 
 
-def run(input_path):
-    print 'Train classifier'
-    utils.train_model()
+def run(input_paths):
+    print '-' * 30
+    print 'Train classifier:'
+    model, scaler = utils.train_model()
+    print '-' * 30
 
-    # print 'Read input'
-    # imgs = utils.read_input(input_path)
-    #
-    # print 'Extract features'
+    print 'Read input'
+    imgs = utils.read_input(input_paths)
 
-    # print 'Sliding window search'
+    print 'Sliding window search'
+    # heatmaps = utils.get_sliding_window_preds(imgs, model, scaler, window_scale=2)
+    heatmaps = utils.get_sliding_window_preds(imgs, model, scaler)
+    heatmaps += utils.get_sliding_window_preds(imgs, model, scaler, window_scale=1.5)
+    heatmaps += utils.get_sliding_window_preds(imgs, model, scaler, window_scale=0.75,
+                                               y_start=400, y_stop=500)
 
-    # print 'Clean multi-detections and false positives'
+    print 'Clean multi-detections and false positives'
+    heatmaps_clean = utils.rolling_threshold(heatmaps)
+    # heatmap_overlays = utils.heatmap_overlay(imgs, heatmaps_clean)
+    # utils.display_images(heatmap_overlays)
+    # return heatmap_overlays
+    car_segmentation, num_cars = utils.segment_cars(heatmaps_clean)
 
-    # return imgs_superimposed
+    print 'Find and draw bounding boxes'
+    imgs_superimposed = utils.draw_boxes(imgs, car_segmentation, num_cars)
+    # utils.display_images(imgs_superimposed)
+
+    return imgs_superimposed
 
 ##
 # TEST
@@ -27,15 +41,12 @@ def run(input_path):
 
 from glob import glob
 def test():
-    paths = glob(join(c.TEST_DIR, '*.jpg'))
-    for path in paths:
-        print path
+    paths = glob(join(c.TEST_DIR, '*.png'))
+    imgs = run(paths)
 
-        imgs = run(path)
-        # utils.display_images(imgs)
-
-        save_path = join(c.SAVE_DIR, 'test/' + basename(path))
-        utils.save(imgs, save_path)
+    for i, path in enumerate(paths):
+        save_path = utils.get_path(join(c.SAVE_DIR, 'test/' + basename(path)))
+        utils.save_output([imgs[i]], save_path)
 
 
 ##
@@ -48,17 +59,17 @@ def print_usage():
     print '(-T / --test)  (Boolean flag. Whether to run the test function instead of normal run.)'
 
 if __name__ == "__main__":
-    path = None
+    paths = None
 
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], 'p:T', ['path=', 'test'])
+        opts, _ = getopt.getopt(sys.argv[1:], 'p:T', ['paths=', 'test'])
     except getopt.GetoptError:
         print_usage()
         sys.exit(2)
 
     for opt, arg in opts:
-        if opt in ('-p', '--path'):
-            path = arg
+        if opt in ('-p', '--paths'):
+            paths = [arg]
         if opt in ('-T', '--test'):
             test()
             sys.exit(2)
@@ -67,9 +78,10 @@ if __name__ == "__main__":
     #     print_usage()
     #     sys.exit(2)
 
-    run(path)
-    # imgs_processed = run(path)
+    # run(paths)
+    imgs_processed = run(paths)
     #
-    # # Save images. Use same filename as input, but in save directory.
-    # save_path = join(c.SAVE_DIR, basename(path))
-    # utils.save(imgs_processed, save_path)
+    # Save images. Use same filename as input, but in save directory.
+    for i, path in enumerate(paths):
+        save_path = utils.get_path(join(c.SAVE_DIR, basename(path)))
+        utils.save_output([imgs_processed[i]], save_path)
