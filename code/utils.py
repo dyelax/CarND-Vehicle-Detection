@@ -213,7 +213,7 @@ def get_HOG_features(imgs, num_orientations=c.NUM_ORIENTATIONS, pix_per_cell=c.P
                                       transform_sqrt=True,
                                       visualise=visualize,
                                       feature_vector=feature_vec)
-            c3_features, c3_img = hog(img[:, :, 3],
+            c3_features, c3_img = hog(img[:, :, 2],
                                       orientations=num_orientations,
                                       pixels_per_cell=(pix_per_cell, pix_per_cell),
                                       cells_per_block=(cells_per_block, cells_per_block),

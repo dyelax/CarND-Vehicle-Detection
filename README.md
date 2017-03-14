@@ -10,14 +10,15 @@ The goals / steps of this project are the following:
 * Estimate a bounding box for vehicles detected.
 
 [//]: # (Image References)
-[image1]: ./examples/car_not_car.png
-[image2]: ./examples/HOG_example.jpg
-[image3]: ./examples/sliding_windows.jpg
-[image4]: ./examples/sliding_window.jpg
-[image5]: ./examples/bboxes_and_heat.png
-[image6]: ./examples/labels_map.png
-[image7]: ./examples/output_bboxes.png
-[video1]: ./project_video.mp4
+[image1]: ./examples/car.png
+[image2]: ./examples/non.png
+[image3]: ./examples/car_HOG.png
+[image4]: ./examples/non_HOG.png
+[image5]: ./examples/heatmap.png
+[image6]: ./examples/heatmap_clean.png
+[image7]: ./examples/labels.png
+[image8]: ./examples/boxes.png
+[image9]: ./examples/project_video.gif
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/513/view) Points
 ###Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
@@ -33,71 +34,57 @@ You're reading it!
 
 ####1. Explain how (and identify where in your code) you extracted HOG features from the training images.
 
-The code for this step is contained in the first code cell of the IPython notebook (or in lines # through # of the file called `some_file.py`).  
+The code for this step is contained in in `get_HOG_features()` at line 179 of `utils.py`).  
 
 I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an example of one of each of the `vehicle` and `non-vehicle` classes:
 
-![alt text][image1]
+![Car][image1] ![Non-car][image2]
 
 I then explored different color spaces and different `skimage.hog()` parameters (`orientations`, `pixels_per_cell`, and `cells_per_block`).  I grabbed random images from each of the two classes and displayed them to get a feel for what the `skimage.hog()` output looks like.
 
-Here is an example using the `YCrCb` color space and HOG parameters of `orientations=8`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)`:
+Here is an example using the `HLS` color space and HOG parameters of `orientations=12`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)`:
 
-
-![alt text][image2]
+![Car HOG][image3] ![Non-car HOG][image4]
 
 ####2. Explain how you settled on your final choice of HOG parameters.
 
-I tried various combinations of parameters and...
+I tried various combinations of parameters while training my classification model, and empirically found that the parameters mentioned aboce resulted in the highest accuracy.
 
 ####3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
 
-I trained a linear SVM using...
+I trained a linear SVM using HOG, color bin and color histogram features in `train_model()` at line 668 of `utils.py`. To save on iteration time, I saved the trained models so I could load them without retraining. My final model was a Linear SVM trained on `HLS` images, the aforementioned HOG settings, color bin features of shape `(16, 16)` and color histogram features with 32 bins. This resulted in a test accuracy of 90.3%. I trained on the GTI data and tested on the other directories to avoid the risk of overfitting that came with having similar images in the same directory.
 
-Test Accuracy (splitting on dirs)
-HLS-9: 0.89686423781
-HLS-12: 0.902936378467
-YCrCb-12: 0.932390792097 (But not making any detections)
-HSV-12: 0.910277324633
+Some other settings resulted in higher test accuracy. For example, training on images in `YCrCb` space gave a test accuracy of 93.2%; however, upon qualitative inspection of performance one the test video, these settings did not perform as well. I suspect this is because the color spaces perform differently on the training images and the frames of the test video, which have obvious qualitative differences.  
 
 ###Sliding Window Search
 
-####1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
+####Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
 
-I decided to search random window positions at random scales all over the image and came up with this (ok just kidding I didn't actually ;):
+I implemented sliding window search in `get_sliding_window_preds` at line 368 in `utils.py`. I searched on windows of scales `64x64` and `96x96` over the whole road area (y pixels 400-656), because these searches are relatively quick and produce good results. I also searched at scale `32x32`, limited to y pixels 400-500, because this search took much longer, and smaller car detections are more likely to be closer to the horizon. Here is an example of a heatmap of detections made on a test image:
 
-![alt text][image3]
+![Heatmap][image5]
 
-####2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
+####Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
-Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  Here are some example images:
+I filtered false positives by implementing a rolling threshold on the heatmap. To do this, I zeroed out any pixels that had fewer than 4 heatmap detections over the past 8 frames. This resulted in the following cleaned heatmap.
 
-![alt text][image4]
+![Heatmap clean][image6]
+
+I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.
+
+![Labels][image7]
+
+From there, I constructed bounding boxes to cover the area of each blob detected.
+
+![Boxes][image8]
+
 ---
 
 ### Video Implementation
 
-####1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
-Here's a [link to my video result](./project_video.mp4)
+####Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
 
-
-####2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
-
-I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
-
-Here's an example result showing the heatmap from a series of frames of video, the result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
-
-### Here are six frames and their corresponding heatmaps:
-
-![alt text][image5]
-
-### Here is the output of `scipy.ndimage.measurements.label()` on the integrated heatmap from all six frames:
-![alt text][image6]
-
-### Here the resulting bounding boxes are drawn onto the last frame in the series:
-![alt text][image7]
-
-
+![Project video][image9]
 
 ---
 
@@ -105,5 +92,5 @@ Here's an example result showing the heatmap from a series of frames of video, t
 
 ####1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+Initially, I ran into a lot of issues with overfitting. My model was getting 99.8% test accuracy, but was giving terrible bounding box predictions. This was because. Even after fixing this by splitting train/test data by directory, some of my models that performed well in test accuracy resulted in poor bounding box predictions on the test video. I believe this is because the train/test data and the test video are significantly different in terms of image quality / saturation. Another issue is that the sliding window detection is currently too slow to be run in real time. In the future I would like to speed this up and improve performance by using a CNN classifier on a GPU. I would also like to combine this with the advanced lane finding project to create a full lane and car detection pipeline.
 
