@@ -38,8 +38,6 @@ The code for this step is contained in in `get_HOG_features()` at line 179 of `u
 
 I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an example of one of each of the `vehicle` and `non-vehicle` classes:
 
-![Car][image1] ![Non-car][image2]
-
 <img src="https://github.com/dyelax/CarND-Vehicle-Detection/blob/master/examples/car.png?raw=true" width=49% />
 <img src="https://github.com/dyelax/CarND-Vehicle-Detection/blob/master/examples/non.png?raw=true" width=49% />
 
@@ -47,7 +45,9 @@ I then explored different color spaces and different `skimage.hog()` parameters 
 
 Here is an example using the `HLS` color space and HOG parameters of `orientations=12`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)`:
 
-![Car HOG][image3] ![Non-car HOG][image4]
+
+<img src="https://github.com/dyelax/CarND-Vehicle-Detection/blob/master/examples/car_HOG.png?raw=true" width=49% />
+<img src="https://github.com/dyelax/CarND-Vehicle-Detection/blob/master/examples/non_HOG.png?raw=true" width=49% />
 
 ####2. Explain how you settled on your final choice of HOG parameters.
 
@@ -75,7 +75,7 @@ I filtered false positives by implementing a rolling threshold on the heatmap. T
 
 I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.
 
-![Labels][image7]
+<img src="https://github.com/dyelax/CarND-Vehicle-Detection/blob/master/examples/labels.png?raw=true" width=100% />
 
 From there, I constructed bounding boxes to cover the area of each blob detected.
 
