@@ -87,7 +87,7 @@ From there, I constructed bounding boxes to cover the area of each blob detected
 
 ####Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
 
-![Project video][image9]
+<img src="https://github.com/dyelax/CarND-Vehicle-Detection/blob/master/examples/project_video.gif?raw=true" width=100% />
 
 ---
 
