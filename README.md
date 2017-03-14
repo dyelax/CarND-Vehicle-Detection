@@ -40,6 +40,9 @@ I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an 
 
 ![Car][image1] ![Non-car][image2]
 
+<img src="https://github.com/dyelax/CarND-Vehicle-Detection/blob/master/examples/car.png?raw=true" style="width=45%; margin-right:10%" />
+<img src="https://github.com/dyelax/CarND-Vehicle-Detection/blob/master/examples/non.png?raw=true" width=45% />
+
 I then explored different color spaces and different `skimage.hog()` parameters (`orientations`, `pixels_per_cell`, and `cells_per_block`).  I grabbed random images from each of the two classes and displayed them to get a feel for what the `skimage.hog()` output looks like.
 
 Here is an example using the `HLS` color space and HOG parameters of `orientations=12`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)`:
